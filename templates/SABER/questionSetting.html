@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block headers %}
+
+  <script src="https://unpkg.com/mathlive/dist/mathlive.min.js"></script>
+
+  <style>
+    div.editor-border {
+      border-style: solid;
+      border-color:black
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+<div class = "rosella-textbox">
+  <p> The Secure Admin backdoor Editor Remote: Coming Soon <br> <br> <br>  </p>
+</div>
+
+<div class = "rosella-textbox">
+  <p> Showing page {{pageNum}} of {{totalPages}}</p>
+  {% if pageNum > 1 %}
+    <a href="{% url 'questionSetting'  quizId pageNum|add:'-1' %}">Previous page</a>
+  {% endif %}
+  <br>
+  {% if pageNum < totalPages %}
+  <a href = "{% url 'questionSetting'  quizId pageNum|add:'1' %}"> Next Page </a>
+  {% endif %}
+</div>
+
+
+<div class = "rosella-textbox editor-border" id = "editorInterface" >
+  <span class = "alert-textbox" id = "returnMessagePosition" onclick = "clearMessage()"> </span>
+  <h3> Quiz Editor </h3>
+  <br>
+  <br>
+
+  <form action = "javascript:editQuiz()">
+    <h3> Edit Quiz Details </h3>
+    <label for="quizName" > Enter Quiz Name: </label>
+    <input id = "quizName" value = "{{thisQuiz.name}}"> </input>
+    <br>
+    <label for="quizWeight"> Enter Quiz Weighting (positive Integer): </label>
+    <input id = "quizWeight" value="100"> </input>
+
+    <p> <b> Quiz Description </b> <br> </p>
+
+    <textarea id="quizDescription" >{{thisQuiz.description}}</textarea>
+    <p> <b> Quiz Resources (useless atm) </b> <br> </p>
+
+    <textarea id="quizResources">{{thisQuiz.quizResources}}</textarea>
+    <br>
+    <input type = "submit" value = "Save Quiz edits">
+  </form>
+
+  </div>
+
+ {% for question in questionList %}
+    <div class = "rosella-textbox" id = "question{{question.id}}" onclick = "toggleQuestion({{question.id}})"> 
+        <h3> Question #: {{question.id}}</h3>
+        <p> <b>Number of Points:</b> {{question.weight}}</p>
+        <p> {% autoescape off %} 
+            {{question.questionHTML}}
+        {% endautoescape %}</p>
+        <p>
+            {% autoescape off %}
+            {{quiz.description}}
+            {% endautoescape %}
+        </p>
+        <br>
+        {% for option in question.options %} 
+          <p> <b> Option # {{forloop.counter}} </b></p>
+          {% autoescape off %}
+          <p> {{option}} </p>
+          <br>
+          {% endautoescape %}
+        {% endfor %}
+        
+        {% if question.answerType == "ia" %}
+          <p> <b> Correct Answer: </b> {{question.correctAnswer}} </p>
+        {% elif question.answerType == "mc" %} 
+          <p> <b> Correct option: #</b> {{question.correctAnswer}} </p>
+        {% endif %}
+        <br>
+        <p> <b> Number of Points: </b> {{question.weight}} </p>
+    </div>
+    {% if question.inUse %}
+      <script> document.getElementById("question{{question.id}}").style.backgroundColor = "rgb(145, 150, 153)" </script>
+    {% endif %}
+ {% endfor %}
+
+<script>
+  function clearMessage() {
+    //clear alert
+    document.getElementById("returnMessagePosition").style.display = "none";
+  }
+
+
+function toggleQuestion(id) {
+    //else toggle question inclusiveness in quiz
+    const csrftoken = getCookie('csrftoken');
+
+    var request = new XMLHttpRequest();
+    request.open("POST", '{% url "saberParser" %}', true);
+    request.setRequestHeader("X-CSRFToken", csrftoken);
+
+    package = {"command" : "toggleQuiz",
+        "args" : {
+            'questionId': id,
+            'quizId' : {{quizId}}
+         }}
+    //prep data to send
+    request.send(JSON.stringify(package));
+
+    request.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        //document.getElementById("demo").innerHTML = this.responseText;
+        var msgPos = document.getElementById("returnMessagePosition");
+        msgPos.style.display = "block";
+        msgPos.innerHTML = "<p>" + this.responseText + " (Click to Dismiss)</p> ";
+        if (this.responseText.includes("success")) {
+          //alternative: renderquestion() it and disregard line limit
+          //alternative 2: do nothing (current option) 
+          if (document.getElementById("question"+id.toString()).style.backgroundColor == "rgb(145, 150, 153)") {
+            // currently dark color
+            //change to light color, unselect question
+            document.getElementById("question"+id.toString()).style.backgroundColor = "rgb(196,202,206)"
+          } else {
+            //change to dark color
+            document.getElementById("question"+id.toString()).style.backgroundColor = "rgb(145, 150, 153)"
+          }
+        }
+        
+      }
+    };
+}
+
+function editQuiz() {
+    //edit quiz descriptions
+    const csrftoken = getCookie('csrftoken');
+
+    var request = new XMLHttpRequest();
+    request.open("POST", '{% url "saberParser" %}', true);
+    request.setRequestHeader("X-CSRFToken", csrftoken);
+
+    var package = {"command": "editQuiz",
+                "args": {
+                  "id" : {{thisQuiz.id}},
+                  "quizWeight": document.getElementById("quizWeight").value,
+                  "name": document.getElementById("quizName").value,
+                  "description": document.getElementById("quizDescription").value,
+                  "quizResources": document.getElementById("quizResources").value
+                }}
+    //prep data to send
+    request.send(JSON.stringify(package));
+
+    request.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        var msgPos = document.getElementById("returnMessagePosition");
+        msgPos.style.display = "block";
+        msgPos.innerHTML = "<p>" + this.responseText + " (Click to Dismiss)</p> ";
+      }
+    };
+}
+
+  clearMessage(); //cuz onload doesn't work for divs/spans
+
+  //setTimeout(function() {loadTarget()}, 1000); 
+
+</script>
+{% endblock %}

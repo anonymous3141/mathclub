@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="rosella-textbox">
+{% if isDone %}
+ <p> Your score is {{userScore}} out of {{totalWeight}} </p>
+{% else %}
+  <p> This quiz is out of {{totalWeight}} </p>
+{% endif %}
+<form action="javascript:submitquiz()">
+
+{% if isDone %}
+     <fieldset disabled = "disabled">
+{% endif %}
+
+{% for question in qList %}
+
+<h4> Question #{{forloop.counter}} ({{question.weight}}
+  {% if question.weight != 1 %}points{% else %}point{% endif %})</h4>
+
+<div> {% autoescape off %}
+    {{ question.questionHTML }}
+{% endautoescape %}</div>
+
+  {% if question.answerType == 'mc' %}
+    <p> Select your answer </p>
+    {% for option in question.options %}
+    <input type = "radio" value = "{{ forloop.counter }}" name = "{{ forloop.parentloop.counter }}"
+    {% if isDone and question.studentOutput == forloop.counter|slugify %}
+      checked = "checked"
+    {% endif %}
+    > {% autoescape off %}<span> {{ option }} </span>{% endautoescape %} 
+    <br>
+    {% endfor %}
+  {% endif %}
+
+  {% if question.answerType == 'ia' %}
+  <label for="{{ forloop.counter }}"> Answer: </label>
+
+  <input id = "{{ forloop.counter }}"
+  {% if isDone %}
+    value = "{{question.studentOutput}}"
+  {% endif %}>
+
+  {% endif %}
+
+<input type="hidden" id = "typeOf{{ forloop.counter }}" value = "{{question.answerType}}">
+
+
+<br>
+{% if isDone %}
+<p> Your answer was <b>{{question.judgeVerdict}}</b> </p>
+{% endif %}
+<br>
+<br>
+{% endfor %}
+
+{% if not isDone %}
+<input type="submit" value="Submit quiz">
+{% else %}
+     </fieldset>
+{% endif %}
+</form>
+
+</div>
+<script>
+function submitquiz() {
+  var Qnum = {{numQs}};
+  var quizId = {{quizId}};
+  var answerJson = {'quizId': quizId};
+  var listIds = [
+    -1
+    {% for question in qList %}
+      ,{{question.id}}
+    {% endfor %}
+  ] //-1 is dummy
+  for (var i = 1; i <= Qnum; i++) {
+    var qType = document.getElementById("typeOf"+i.toString()).value;
+    if (qType == 'mc') {
+      //alert('input[name='+i.toString()+']:checked');
+
+      //handle empty answer
+      if (document.querySelector('input[name="'+i.toString()+'"]:checked') == null) {
+        answerJson[listIds[i].toString()] = "null";
+      } else {
+        answerJson[listIds[i].toString()] = document.querySelector('input[name="'+i.toString()+'"]:checked').value; // thanks google
+      }
+      //lets hope it works on safari
+      //maybe select shit by default to not break stuff
+    } else if (qType == 'ia') {
+      //output += document.getElementById(i.toString()).value;
+      answerJson[listIds[i].toString()] = document.getElementById(i.toString()).value;
+    }
+    //output += " ";
+  }
+  const csrftoken = getCookie('csrftoken');
+    var request = new XMLHttpRequest();
+    request.open("POST", "{% url 'gradeQuiz' %}", true);
+    request.setRequestHeader("X-CSRFToken", csrftoken);
+    //prep data to send
+    request.send(JSON.stringify(answerJson));
+
+    request.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      //document.getElementById("demo").innerHTML = this.responseText;
+      //alert(this.responseText);
+      location.reload(); //reload page to get results
+    }
+  };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block headers %}
+<style>
+    table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+  margin: 3rem;
+}
+
+td, th {
+  border: 1px solid #2b1a1a;
+  text-align: left;
+  padding: 8px;
+  white-space: nowrap;
+}
+
+</style>
+{% endblock %}
+
+{% block body %}
+
+<div class = "rosella-leaderboard-textbox">
+  <p> <b> Viewing User Rankings for {{thisQuiz.name}} (Quiz#{{thisQuiz.id}})</b></p>
+  <button onclick = 'deleteUserProblemInfo("DELETE_QUIZ", "", {{thisQuiz.id}})'> ERASE ALL USER INFORMATION FOR THIS QUIZ </button>
+  <table>
+      <tr>
+          <th> Rank </th>
+          <th> User </th>
+          <th> Score </th>
+          {% for i in numCorrect %} 
+            <th> Question {{forloop.counter}}</th>
+          {% endfor %}
+          <th> Delete User Quiz Data </th>
+      </tr>
+      {% for row in ctxUser %} 
+      <tr>
+         <td> {{forloop.counter}} </td>
+         <td> {{row.user}} </td>
+         <td> {{row.score}} </td>
+         {% for verdict in row.userVerdicts %} 
+            {% if verdict == "INCORRECT" %} 
+                <td style="color:red"> INCORRECT    </td>
+            {% else %} 
+                <td style="color:green"> CORRECT    </td>
+            {% endif %}
+         {% endfor %}
+         <td> <button onclick="deleteUserProblemInfo('DELETE_USER_QUIZ','{{row.user}}', '{{thisQuiz.id}}')"> DELETE </button> </td>
+        </tr>
+      {% endfor %}
+      <tr>
+          <td> Num Correct per Problem:</td>
+          <td> </td>
+          <td> </td>
+          {% for value in numCorrect %} 
+            <td> {{value}} </td>
+          {% endfor %}
+          <td> </td>
+      </tr>
+  </table>
+  <button onclick = 'deleteUserProblemInfo("DELETE_ALL", "", 0)'> ERASE USER INFORMATION FOR ALL QUIZZES </button>
+</div>
+
+<script>
+  function deleteUserProblemInfo(operationType, user, quiz) {
+    //else toggle question inclusiveness in quiz
+    if (operationType == "DELETE_QUIZ" || operationType == "DELETE_ALL") {
+      var confirm = prompt("This operation is irreversible. Type CONFIRM (case sensitive) to continue")
+      if (confirm != "CONFIRM") {
+        return;
+      }
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    var request = new XMLHttpRequest();
+    request.open("POST", '{% url "saberParser" %}', true);
+    request.setRequestHeader("X-CSRFToken", csrftoken);
+
+    package = {"command" : "clearUserProblemInfo",
+        "args" : {
+            'operationType': operationType,
+            'username': user,
+            'quizId' : {{thisQuiz.id}}
+         }}
+    //prep data to send
+    request.send(JSON.stringify(package));
+
+    request.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        if (this.responseText.includes("success")) {
+          location.reload()
+        } else {
+          alert(this.responseText)
+        }
+        
+      }
+    };
+}
+</script> 
+{% endblock %}

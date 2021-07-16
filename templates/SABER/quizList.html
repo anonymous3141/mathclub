@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block headers %}
+
+  <script src="https://unpkg.com/mathlive/dist/mathlive.min.js"></script>
+
+  <style>
+    div.editor-border {
+      border-style: solid;
+      border-color:black
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+<div class = "rosella-textbox">
+  <p> The Secure Admin backdoor Editor Remote: Coming Soon <br> <br> <br>  </p>
+</div>
+
+<div class = "rosella-textbox">
+  <p> Showing page {{pageNum}} of {{totalPages}}</p>
+  {% if pageNum > 1 %}
+    <a href="{% url 'quizList'  pageNum|add:'-1' %}">Previous page</a>
+  {% endif %}
+  <br>
+  {% if pageNum < totalPages %}
+  <a href = "{% url 'quizList'  pageNum|add:'1' %}"> Next Page </a>
+  {% endif %}
+</div>
+
+<div class = "rosella-textbox editor-border" id = "editorInterface" >
+    <span class = "alert-textbox" id = "returnMessagePosition" onclick = "clearMessage()"> </span>
+    <h3> Create Quiz</h3>
+    <br>
+    <br>
+
+    <form action = "javascript:sendCommand(-1)">
+      <label for="quizName"> Enter Quiz Name: </label>
+      <input id = "quizName"> </input>
+      <br>
+      <label for="quizWeight"> Enter Quiz Weighting (positive Integer): </label>
+      <input id = "quizWeight" value="100"> </input>
+
+      <p> <b> Quiz Description </b> <br> </p>
+
+      <textarea id="quizDescription"></textarea>
+      <p> <b> Quiz Resources (useless atm) </b> <br> </p>
+
+      <textarea id="quizResources"></textarea>
+
+      <br>
+      <input type = "submit" value = "Save Quiz">
+      <p> <b> Note: </b> Selected problems are darker in color</p>
+    </form>
+
+    </div>
+
+ {% for quiz in quizList %}
+    <div class = "rosella-textbox" id = "quiz{{quiz.id}}"> 
+        <h3> Quiz Name: {{quiz.name}}</h3>
+        <h4> Quiz Id: {{quiz.id}} </h4>
+        <p> <b> Weighting: </b> Each point is worth {{quiz.weight}} global points </p>
+        <a href="{% url 'questionSetting' quiz.id 1 %}"> Choose Questions </a>
+        <br>
+        <br>
+        <a href="{% url 'quizLeaderboards' quiz.id %}"> View Rankings and manage users </a>
+        <form>
+            <input type="checkbox" 
+            {% if quiz.visible %}
+            checked="checked"
+            {% endif %}           
+         onchange = 'sendCommand({{quiz.id}})'>
+            <label for="vehicle1"> In Use </label><br>
+        </form>
+        <p> <b> Description: </b></p>
+        <p>
+            {% autoescape off %}
+            {{quiz.description}}
+            {% endautoescape %}
+        </p>
+
+        <p> <b> Quiz Resources: </b></p>
+        <p>
+            {% autoescape off %}
+            {{quiz.quizResources}}
+            {% endautoescape %}
+        </p>
+    </div>
+ {% endfor %}
+
+<script>
+
+  function clearMessage() {
+    //clear alert
+    document.getElementById("returnMessagePosition").style.display = "none";
+  }
+
+
+function sendCommand(id) {
+    //if id == -1, create quiz
+    //else toggle quiz visibility
+    const csrftoken = getCookie('csrftoken');
+
+    var request = new XMLHttpRequest();
+    request.open("POST", '{% url "saberParser" %}', true);
+    request.setRequestHeader("X-CSRFToken", csrftoken);
+
+    var package = {"command": "createQuiz",
+                "args": {
+                  "name": document.getElementById("quizName").value,
+                  "quizWeight": document.getElementById("quizWeight").value,
+                  "description": document.getElementById("quizDescription").value,
+                  "quizResources": document.getElementById("quizResources").value
+                }}
+    
+    if (id != -1) {
+        package = {"command" : "toggleQuiz",
+        "args" : {
+            "toggleVisibility" : 1,
+            'questionId': -1,
+            'quizId' : id
+         }}
+    }
+    //prep data to send
+    request.send(JSON.stringify(package));
+
+    request.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        //document.getElementById("demo").innerHTML = this.responseText;
+        var msgPos = document.getElementById("returnMessagePosition");
+        msgPos.style.display = "block";
+        msgPos.innerHTML = "<p>" + this.responseText + " (Click to Dismiss)</p> ";
+        if (this.responseText.includes("success") && id == -1) {
+          //alternative: renderquestion() it and disregard line limit
+          //alternative 2: do nothing (current option)
+          location.reload();
+        }
+        
+      }
+    };
+}
+
+  clearMessage(); //cuz onload doesn't work for divs/spans
+
+  //setTimeout(function() {loadTarget()}, 1000); 
+
+</script>
+{% endblock %}

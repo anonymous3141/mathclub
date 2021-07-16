@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html>
+<head>
+   <link rel="shortcut icon" href="/static/favicon.ico">
+   <script>
+     /*
+      This software is CC BY 4.0.
+      Originally designed for the Caulfield (Jerry Mao) Maths Club
+      by anonymous3141. It takes extensive inspiration from orac2.info 
+      and its developers as well. 
+
+      I would also like to pre-emptively thank the many people from the club for
+      testing and finding bugs which probably exist, as well as Kevin Zhou,
+      the club's current head, for providing much useful advice about stylistic choice
+      and required functiionality.
+     */
+   function getCookie(name) { 
+    //from https://docs.djangoproject.com/en/3.1/ref/csrf/ section AJAX
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+                }
+              }
+    }
+    return cookieValue;
+  }
+  </script>
+  {% block headers %}
+  {% endblock %}
+</head>
+{% block meta %}
+{% endblock %}
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+        inlineMath: [['$','$']],
+        displayMath: [ ['$$','$$']]
+      }
+    });
+  </script>
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+	<link rel="stylesheet" href="{% static 'stylesheet.css' %}"></link>
+  <body class = "saberstyle2">
+    <nav class="w3schoolnavbar">
+        <div class="container">
+            <a class="navbutton" href="{% url 'home' %}">Home</a>
+            <a class="navbutton" href="{% url 'globalLeaderboards' %}"> Leaderboards </a>
+            {% if request.user.is_authenticated %}
+            <a class="navbutton" href="/quiz">Take Quiz</a>
+              {% if request.user.is_superuser %}
+                <a class = "navbutton" href = "/SABER">SABER</a>
+              {% endif %}
+            <a class="navbutton" href="/accounts/logout">{{ user }} | Logout</a>
+            {% else %}
+            <a class="navbutton" href="/accounts/login">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+    <title>{% block title %}{% endblock %}</title>
+    {% block content %}
+    {% endblock %}
+    {% comment %}
+    For registration
+    {% endcomment %}
+    {% block body %}
+    {% endblock %}
+  </body>
+</html>

@@ -1,0 +1,114 @@
+{% load static %}
+      body.saberstyle {
+        overflow-x: auto;
+        background-image: url('/static/kevinwaifu2.png'); /*kevin asked for this*/
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-position: right bottom;
+	  /* Full height */
+    	  height: 100%;
+
+    	  /* Center and scale the image nicely */
+    	  background-position: center;
+     	  background-repeat: no-repeat;
+     	  background-size: cover;
+      }
+
+      body.saberstyle2 {
+        overflow-x: auto;
+        background-image: url('/static/prodbackground.jpg'); /*Because Lily saber offends some people*/
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-position: right bottom;
+      /* Full height */
+        height: 100%;
+      
+        /* Center and scale the image nicely */
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+
+      .alert-textbox {
+      	 border-radius: 25px;
+      	 background-color: rgba(0,0,255, 0.4);
+      	 padding: 2% 4% 2% 4%;
+      	 
+      }
+      .rosella-container {
+        width: 1500px;
+        padding: 2rem;
+        margin: 3rem auto 20% auto;
+      }
+
+      .rosella-textbox {
+        width: 75%;
+        padding: 2rem;
+        background-color: rgba(196,202,206, 0.8);
+        margin: 3rem auto 2% auto;
+        overflow: auto;
+      }
+
+      .rosella-leaderboard-textbox {
+        padding: 2rem;
+        background-color: rgba(196,202,206, 0.8);
+        margin: 3rem auto 2% auto;
+        overflow: auto;
+      }
+
+      .w3schoolnavbar {
+            position: relative;
+            z-index: 2;
+            font-size: 17px;
+            background-color: rgba(196,202,206, 0.8);
+            color: #f1f1f1;
+            width: 100%;
+            padding: 2% 0 2% 0; 
+            margin: 0;
+            letter-spacing: 1px;
+      }
+
+      a.navbutton {
+           border: none;
+           font-size: 20px;
+           background-color: rgba(196,202,206, 0.0);
+           font-family: Garamond, serif;
+           text-decoration: none;
+           color: black; /* text color */
+           margin: 0;
+           /*font-weight: bold; */
+           padding: 2% 4% 2% 4%;
+      }
+      a.navbutton:hover {
+        background-color: rgb(255,255,255,0.8);
+      }
+      #search-card {
+        margin: 0;
+        width: min-content;
+        z-index: 1;
+        position: absolute;
+      }
+
+/* SABER STUFF: some taken from orac2 */
+      .saber-options-grid {
+        color: white;
+        background-color: #a7b9eb;
+        text-align: center;
+        font-size: 1.5em;
+        padding: 1em;
+        border-radius: 5px;
+        border: 2px solid #a7b9eb;
+	margin: 5px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-decoration: none;
+      }
+      
+      .saber-options-grid:hover {
+        background-color: #c8d5fa;
+      }
+      
+/*This is heavily based on the orac2 css sheet */
+/* Everything after the following line was excluded as it was not used:
+@import url('http://fonts.googleapis.com/css?family=Droid+Serif');*/
+      

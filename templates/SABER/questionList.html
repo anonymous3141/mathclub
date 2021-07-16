@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+{% block headers %}
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/5/tinymce.min.js" referrerpolicy="origin"></script>
+  <script>
+
+  tinymce.init({selector:'textarea',
+    content_css: "https://unpkg.com/mathlive/dist/mathlive-static.css",
+  content_style:
+`body { font-size: 16px; font-family: Times New Roman; } .ML__text{font-family: Times !important;} .ML__mathlive .op-over-under {margin-left:0px !important;} table>tbody>tr>th, table>thead>tr>td, table>tbody>tr>td {padding: 12px 8px; vertical-align: middle}`});
+
+</script>
+  <script src="https://unpkg.com/mathlive/dist/mathlive.min.js"></script>
+
+  <style>
+    div.editor-border {
+      border-style: solid;
+      border-color:black
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+<div class = "rosella-textbox">
+  <p> The Secure Admin backdoor Editor Remote: Coming Soon <br> <br> <br>  </p>
+</div>
+
+<div class = "rosella-textbox">
+  <p> Showing page {{pageNum}} of {{totalPages}}</p>
+  {% if pageNum > 1 %}
+    <a href="{% url 'questionList'  pageNum|add:'-1' %}">Previous page</a>
+  {% endif %}
+  <br>
+  {% if pageNum < totalPages %}
+  <a href = "{% url 'questionList'  pageNum|add:'1' %}"> Next Page </a>
+  {% endif %}
+</div>
+
+<div class = "rosella-textbox" id = "question0">
+  <p> Add Questions or Edit them! <br> <br> <br>  </p>
+  <button onclick = "showEditor(0)"> Add Question !</button>
+</div>
+
+<div class = "rosella-textbox editor-border" id = "editorInterface" >
+    <span class = "alert-textbox" id = "returnMessagePosition" onclick = "clearMessage()"> </span>
+    <button type = "button" onclick = "closeEditor()"> Close </button>
+    <h3> Question Editor </h3>
+    <br>
+    <br>
+    <label for ="questionType"> Select Question Type <br> </label>
+
+    <select id="questionType" onchange = "updateQuestionType()">
+      <option select="selected" label="Short Answer">ia</option>
+      <option label="Multichoice">mc</option>
+    </select>
+
+    <p id = "questionPreview"> </p>
+    <form action = "javascript:saveQuestion()">
+
+
+      
+      <p id = "equationTitle"> <b> Latex Palette (if your bad at latex): </b> </p>
+      
+      <button type="button" onclick="addLatex()"> Copy raw latex to clipboard <br> </button>
+      
+      <p> <b> Editor Interface </b> </p>
+
+      <textarea id="questionField" data-rich = "true"></textarea>
+      <div id="mcFormComponent">
+        <p> <b> Choices </b> <br> </p>
+        <button type="button" onclick = "editChoice('addrich')"> Add Richtext Option </button>
+        <button type="button" onclick = "editChoice('addplain')"> Add Plaintext Option </button>
+        <button type="button" onclick = "editChoice('remove')"> Remove Last Option </button>
+        <div id = "choiceList">
+        </div>
+      </div>
+      <br>
+      <label for ="correctAnswer"> Enter Correct Answer: </label>
+      <input id = "correctAnswer">
+      <br>
+      <label for ="questionWeight"> Enter number of Points: </label>
+      <input id = "questionWeight" value="1">
+      <br>
+      <button type="button" onclick = "previewQuestion()"> Preview </button>
+      <input type = "submit" value = "Save Question">
+    </form>
+    <p> <b>Note: </b> For multichoice questions enter the position (counting from 1) of the correct answer </p>
+    <p> <b>Note 2: </b> Plaintext Options are still rendered as equation/html. You just won't have the rtf editor. </p>
+    <p> <b>Note 3: </b> Paragraph tags bookending options are removed to enforce inline property </p>
+    <p> <b>Note 4: </b> If adding questions reload page to see new questions </p>
+    </div>
+
+ 
+
+<script>
+  function getText(textareaId) {
+    var isRich = document.getElementById(textareaId).getAttribute('data-rich');
+    if (isRich == 'true') {
+      return tinymce.get(textareaId).getContent();
+    } else {
+      return document.getElementById(textareaId).value;
+    }
+  }
+
+  function setText(areaId, txt) {
+    var area = document.getElementById(areaId)
+    if (area.getAttribute("data-rich") == "true") {
+      //alert(areaId)
+      tinymce.get(areaId).setContent(txt);
+    } else {
+      area.value = txt;
+    }
+  }
+
+  function addLatex() {
+		var eq = document.getElementById('equation');
+    copyToClipboard("$"+eq.value+"$");
+		//tinymce.get("questionField").execCommand('mceInsertcontent', false, "$" + eq.value + "$");
+	}
+
+  function renderQuestion(divName, question, onload = true) {
+    //renders a question in divName
+    //question is a json like dictionary in format of dictionary
+    var view = document.getElementById(divName)
+    var viewHTML = "<p> <b> Question ID: " + question["id"] + "</b> <br> </p>"
+    viewHTML += "<p> Number of points: " + question["weight"] + "<br> </p>"
+    viewHTML += "<p> <b> Statement: </b> <br> </p>"
+    viewHTML += question["questionHTML"]
+    viewHTML += "<br>"
+    if (question['answerType'] == "mc") {
+      viewHTML += "<p> <b>Correct Option:</b> #" + question['correctAnswer']+"<br></p>"
+    } else if (question['answerType'] == "ia") {
+      viewHTML += "<p> <b>Correct Answer:</b> " + question['correctAnswer']+"<br></p>"
+    }
+    
+    for (var i=0; i<question['options'].length; i++) {
+      viewHTML += "<p> <br> <b> Option #" + (i+1).toString() + "</b> <br> </p>"
+      viewHTML += question['options'][i];
+    }
+    viewHTML += "<br> <button type='button' onclick=showEditor("+question["id"]+")> Edit </button>"
+    view.innerHTML = viewHTML
+    if (!onload) {
+      MathJax.Hub.Queue(["Typeset",MathJax.Hub,view]);
+    }
+    
+  }
+
+  function previewQuestion() {
+		var preview = document.getElementById("questionPreview")
+    var previewString = "<p> <b> Question Preview </b> <br> </p>" + tinymce.get("questionField").getContent();
+
+    for (var i = 1; i<=numOptions; i++) {
+        previewString += "<p> <br> <b> Option #" + i.toString() + "</b> <br> </p>"
+        previewString += getText("option"+i.toString());
+    }
+
+    preview.innerHTML = previewString;
+    //console.log(tinymce.get("questionField").getContent())
+    MathJax.Hub.Queue(["Typeset",MathJax.Hub,preview]);
+	}
+
+  
+
+  function copyToClipboard(text) {
+    //from https://stackoverflow.com/questions/33855641/copy-output-of-a-javascript-variable-to-the-clipboard
+    //this is actually so stupid
+    var dummy = document.createElement("textarea");
+    // to avoid breaking orgain page when copying more words
+    // cant copy when adding below this code
+    // dummy.style.display = 'none'
+    document.body.appendChild(dummy);
+    //Be careful if you use texarea. setAttribute('value', value), which works with "input" does not work with "textarea". – Eduard
+    dummy.value = text;
+    dummy.select();
+    document.execCommand("copy");
+    document.body.removeChild(dummy);
+  }
+
+  function clearMessage() {
+    //clear alert
+    document.getElementById("returnMessagePosition").style.display = "none";
+  }
+
+  //num of multichoice options
+  var numOptions = 0;
+
+  function updateQuestionType() {
+    var curType = document.getElementById('questionType').value;
+    const initNumChoices = 1;
+    if (curType == "ia") {
+      document.getElementById("mcFormComponent").style.display = "none";
+      while (numOptions > 0) {
+        editChoice("remove")
+      }
+
+    } else if (curType == "mc") {
+      document.getElementById("mcFormComponent").style.display = "block";
+      for (var i=1; i<=initNumChoices; i++) {
+        editChoice("add")
+      }
+    }
+  }
+
+  function editChoice(command) {
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+    const MAX_NUM_OPTIONS = 10;
+    if (command == "addrich" || command == "addplain") {
+      if (numOptions == MAX_NUM_OPTIONS) {
+        alert("Max Number Options Reached");
+        return;
+      }
+      var numberId = (numOptions+1).toString()
+      //add linebreak
+      var linebreak = document.createElement("p");
+      linebreak.innerHTML="option #"+numberId+"<br>"
+      linebreak.setAttribute("id", "break"+numberId)
+      document.getElementById("choiceList").appendChild(linebreak)
+
+      //add choice
+      var newOption = document.createElement("textarea")
+      newOption.value = alphabet[numOptions];
+      newOption.setAttribute("id", "option"+numberId) //1 index
+      document.getElementById("choiceList").appendChild(newOption)
+      var attr = document.createAttribute("data-rich")
+
+      if (command == "addrich") {
+        //rich text
+        attr.value = 'true'
+        //turn textarea into mce editor
+        var ed = new tinymce.Editor("option"+numberId, {height: "150"}, tinymce.EditorManager);
+        ed.render()
+      } else {
+        //plain text
+        attr.value = 'false'
+      }
+
+      newOption.setAttributeNode(attr);
+
+      //increment options
+      numOptions++;
+    }
+    //note different if statements have different numberId
+    if (command == "remove") {
+      var numberId = (numOptions).toString()
+
+      //remove texteditor
+      if (document.getElementById("option" + numberId).getAttribute("data-rich") == "true") {
+          tinymce.get("option" + numberId).remove(); //remove control
+      }
+
+      var option = document.getElementById("option" + numberId)
+      option.parentNode.removeChild(option);
+
+      //remove break line
+      var br = document.getElementById("break" + numberId)
+      br.parentNode.removeChild(br);
+
+      //decrement
+      numOptions--;
+    }
+  }
+  
+  function loadToEditor(question) {
+    //question in standard json format
+    //load in question to edit
+    console.log("Success")
+    console.log(question)
+
+    //tinymce bug: remove & readd editor 
+    var ed = new tinymce.Editor("questionField", {}, tinymce.EditorManager);
+    ed.render()
+    setText("questionField", question["questionHTML"]) //ensure backslashes not seen as escape
+    //set correct answer & point value
+    document.getElementById("correctAnswer").value = question["correctAnswer"]
+    document.getElementById("questionWeight").value = question["weight"]
+    while (numOptions>0) {
+        editChoice("remove")
+    }
+
+    var dropdownOptions = document.getElementById("questionType").options;
+    for (var i = 0; i < dropdownOptions.length; i++) {
+        if (dropdownOptions[i].text == question["answerType"]) {
+          dropdownOptions[i].selected = "selected";
+        } else {
+          dropdownOptions[i].selected = null;
+        }
+    }
+
+    if (question["answerType"] == "mc") {
+      //load in options
+      //autoselect correct answerType
+      document.getElementById("mcFormComponent").style.display = "block";
+      var listOfOptions = question['options']
+      for (var i=1; i<=listOfOptions.length; i++) {
+        editChoice("addplain") //design limitation rip
+        setText("option"+i.toString(), listOfOptions[i-1])
+      }
+    } else {
+      document.getElementById("mcFormComponent").style.display = "none";
+    }
+  }
+
+  function loadTarget(idToEdit) {
+    const csrftoken = getCookie('csrftoken');
+      var request = new XMLHttpRequest();
+      var queryURL = '{% url "saberParser" %}?command=getQuestion&qId='+idToEdit.toString();
+      request.open("GET", queryURL, true);
+      request.setRequestHeader("X-CSRFToken", csrftoken);
+
+      request.onreadystatechange = function() {
+        if (this.readyState == 4) {
+          //document.getElementById("demo").innerHTML = this.responseText;
+          if ( this.status == 200) {
+            loadToEditor(JSON.parse( this.responseText));
+          } else {
+            //something wrong
+            alert(this.responseText)
+            console.log(this.responseText)
+          }
+        } 
+      };
+      //prep data to send
+      request.send();
+  }
+
+var activeQuestion = 0;
+
+function saveQuestion() {
+
+  const csrftoken = getCookie('csrftoken');
+  var options = []
+  for (var i=1; i<=numOptions; i++) {
+    var txt = document.getElementById("option"+i.toString()).value;
+    if(txt.length >= 3 && txt.slice(0,3)=="<p>") {
+      txt = txt.slice(3)
+    }
+    if (txt.length >= 4 && txt.slice(txt.length-4,txt.length) == "</p>") {
+      txt = txt.slice(0, txt.length-4)
+    }
+    options.push(txt)
+  }
+    var request = new XMLHttpRequest();
+    request.open("POST", '{% url "saberParser" %}', true);
+    request.setRequestHeader("X-CSRFToken", csrftoken);
+    package = {"command": "saveQuestion",
+                "args": {
+                  "questionHTML": tinymce.get("questionField").getContent(),
+                  "answerType": document.getElementById("questionType").value,
+                  "weight": document.getElementById("questionWeight").value,
+                  "correctAnswer": document.getElementById("correctAnswer").value,
+                  "options": options
+                }}
+
+    if (activeQuestion.toString() != "0") {
+      package["args"]["id"]=activeQuestion.toString()
+      package["command"] ="editQuestion"
+    }
+    
+    //prep data to send
+    request.send(JSON.stringify(package));
+
+    request.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        //document.getElementById("demo").innerHTML = this.responseText;
+        var msgPos = document.getElementById("returnMessagePosition");
+        msgPos.style.display = "block";
+        msgPos.innerHTML = "<p>" + this.responseText + " (Click to Dismiss)</p> ";
+        if (activeQuestion.toString() != 0) {
+          //edit mode
+          renderQuestion("question"+package["args"]["id"],package["args"], false)
+        } else if (this.responseText.includes("success")) {
+          //create question
+          //alternative: renderquestion() it and disregard line limit
+          //alternative 2: do nothing (current option)
+          //location.reload();
+        }
+        
+      }
+    };
+}
+
+function closeEditor() {
+  while (numOptions > 0) {
+    editChoice("remove")
+  }
+  document.getElementById("questionPreview").innerHTML = "" //remove preview
+  var math = document.getElementById("equation")
+  if (math != null) {math.parentNode.removeChild(math)}
+  tinymce.remove();
+  document.getElementById('editorInterface').style.display = "none"
+}
+
+function showEditor(questionId) {
+  //questionId is int
+  closeEditor()
+  activeQuestion = questionId;
+  var editor = document.getElementById("editorInterface")
+  var target = document.getElementById("question"+questionId.toString())
+  editor.parentNode.removeChild(editor)
+  target.parentNode.insertBefore(editor, target.nextSibling)
+  editor.style.display = "block"
+
+  if (questionId != 0) {
+    //load question
+    //alert(questionId)
+    loadTarget(questionId.toString())
+  } else {
+    //create question: just render a blank editor
+    var ed = new tinymce.Editor("questionField", {}, tinymce.EditorManager);
+    ed.render()
+  }
+  
+  var x = document.createElement("div")
+  x.innerHTML = '<math-field virtual-keyboard-mode="manual" virtual-keyboards="all" id="equation">\\text{Insert Equations Here!}</math-field>'
+  var pos = document.getElementById("equationTitle")
+  pos.parentNode.insertBefore(x, pos.nextSibling)
+}
+
+  clearMessage(); //cuz onload doesn't work for divs/spans
+  updateQuestionType(); //default to SA
+  closeEditor();
+  //setTimeout(function() {loadTarget()}, 1000); //wait one second for texteditors to load, then load Q
+  var body = document.querySelector("body")
+  {% autoescape off %}
+  {% for question in questionList %}
+  var questionDict = {{question}};
+  var newdiv = document.createElement("div")
+  newdiv.setAttribute("class", "rosella-textbox")
+  newdiv.setAttribute("id", "question"+questionDict["id"])
+  body.appendChild(newdiv)
+  renderQuestion("question"+questionDict["id"], questionDict)
+  {% endfor %}
+  {% endautoescape %}
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block body %}
+{% for quiz in quizList %}
+<div class="rosella-textbox">
+<h3> {{quiz.name}} </h3>
+<p> {{quiz.description}} </p>
+<a href = "{% url 'takeQuiz' quiz.id %}"> Attempt </a>
+</div>
+
+{% endfor %}
+<div class = "rosella-textbox">
+  <p> Showing page {{pageNum}} of {{totalPages}}</p>
+  {% if pageNum > 1 %}
+    <a href="{% url 'quizHome'  pageNum|add:'-1' %}">Previous page</a>
+  {% endif %}
+  <br>
+  {% if pageNum < totalPages %}
+  <a href = "{% url 'quizHome'  pageNum|add:'1' %}"> Next Page </a>
+  {% endif %}
+</div>
+{% endblock %}

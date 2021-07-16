@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block headers %}
+<style>
+    table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #2b1a1a;
+  text-align: left;
+  padding: 8px;
+  white-space: nowrap;
+}
+
+</style>
+{% endblock %}
+
+{% block body %}
+<div class = "rosella-leaderboard-textbox">
+  <table>
+      <tr>
+          <th> Rank </th>
+          <th> User </th>
+          <th> Score </th>
+      </tr>
+      {% for row in ctxUser %} 
+      <tr>
+         <td> {{forloop.counter}} </td>
+         <td> {{row.user__username}} </td>
+         <td> {{row.total_score}} </td>
+        </tr>
+      {% endfor %}
+  </table>
+</div>
+
+<div>
+</div>
+{% endblock %}
