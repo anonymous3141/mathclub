@@ -1,7 +1,6 @@
 # Guide to Software
-If you are reading this, you are probably looking to extend my software. Good luck! I highly recommend a good knowledge of python, and basic knowledge of object orientated programming. Javascript can be learnt on the fly (and I still don't know that much CSS). It will take a few days to understand the codebase, so don't be alarmed if it seems very complex. I had to do a lot of googling so there's no shame to it. 
 
-You will find installation instructions and an overview of architecture, but not detailed descriptions. The code should be mostly self descriptive, and some functions and commands will inevitably need research.
+This is not the latest version of math-club, but an earlier one which has not been significantly cleaned or debugged. Secret keys have been removed.
 
 ## Overview
 - The system uses the Django web framework
